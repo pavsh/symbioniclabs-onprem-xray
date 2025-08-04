@@ -39,4 +39,10 @@ echo "✅ All services starting..."
 echo "💡 Create tunnels in vast.ai for ports: 5678, 11434, 6333"
 echo ""
 
+# Start Open WebUI (with built-in ChromaDB)
+echo "🚀 Starting Open WebUI..."
+nohup open-webui serve --port 3000 > /tmp/openwebui.log 2>&1 &
+echo $! > /tmp/openwebui.pid
+echo "✅ Open WebUI started (PID: $(cat /tmp/openwebui.pid))"
+
 n8n start
