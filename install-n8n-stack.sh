@@ -56,6 +56,14 @@ echo "📁 Cloning n8n AI starter kit..."
 cd /workspace
 git clone https://github.com/n8n-io/self-hosted-ai-starter-kit.git
 
+echo "📦 Step X: Installing Open WebUI..."
+
+# Install Open WebUI via pip
+pip install open-webui
+
+echo "✅ Open WebUI installed successfully!"
+echo "📋 Open WebUI will use built-in ChromaDB for document storage"
+
 echo ""
 echo "🎉 INSTALLATION COMPLETE!"
 echo ""
