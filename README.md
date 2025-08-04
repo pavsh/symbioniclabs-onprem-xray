@@ -245,7 +245,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Optimal**: 40GB+ VRAM (A100), 64GB RAM, 16 CPU cores
 
 ### Model Performance
-- **llama3.2:3b**: ~2-5 tokens/second on RTX 4090
+- **llama3.2:3b**: ~2-5 tokens/second on RTX 4090 or A100 good enough
 - **nomic-embed-text**: ~100 documents/second embedding
 - **Qdrant**: Sub-100ms similarity search on 1M+ vectors
 
