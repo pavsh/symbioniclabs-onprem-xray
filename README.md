@@ -1,4 +1,3 @@
-You're right! Here's the complete README.md as one single file:
 
 ```bash
 cat > /workspace/github-repo/README.md << 'EOF'
