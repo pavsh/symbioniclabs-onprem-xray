@@ -1,6 +1,5 @@
 
-```bash
-cat > /workspace/github-repo/README.md << 'EOF'
+
 # Symbionic Labs On-Premises X-Ray AI Stack
 
 Complete self-hosted AI infrastructure with n8n workflow automation, local LLMs via Ollama, and vector search capabilities using Qdrant. Built for enterprise-grade RAG (Retrieval-Augmented Generation) applications.
