@@ -1,0 +1,203 @@
+-----
+
+### X-Ray Discovery System: Design Specification
+
+-----
+
+### Executive Summary
+
+X-Ray is a lightweight, on-premise-first GenAI discovery system designed to transform a client organization into an AI-driven value chain. It enables deep process understanding by embedding documents, knowledge assets, and workflows into a vector database, enabling interactive exploration via local or cloud-based LLMs. The architecture prioritizes security (PII-safe), portability, hybrid LLM routing, and direct integration with RAG-enabled UI like Open WebUI.
+
+-----
+
+### Project Goal
+
+  * Discover and map client workflows and data assets.
+  * Create structured semantic memory via embeddings.
+  * Allow analysts to explore existing processes using chat-based Q\&A (retrieval-augmented generation, or RAG).
+  * Maintain full control over data (local storage, LLM switch, optional cloud fallback).
+  * Deploy in SMB and enterprise environments with minimal footprint.
+
+-----
+
+### Key Features
+
+  * File intake via webhook, folder watcher, or SFTP.
+  * OCR and automated PII redaction pipeline.
+  * Embedding and storage in ChromaDB via Open WebUI.
+  * Chat-driven RAG.
+  * Ollama-powered local inference (LLaMA3 or other models).
+  * Cloud LLMs supported via OpenAI, Claude, Gemini.
+  * Uses n8n for ingest orchestration (open source, no-code).
+
+-----
+
+### Logical Data Flow
+
+Here is an accurate text-based representation of the system's architecture and data flow:
+
+```
++----------------+      +-------------------+      +-----------------+
+|   File Intake  |----> | OCR & PII         |----> | Open WebUI API  |
+| (Webhook, SFTP,|      | Redaction         |      | (/api/sources)  |
+| Folder Watcher)|      +-------------------+      +-----------------+
++----------------+                                         |
+                                                           |
+                                                           V
++-------------------------------------------------------------------+
+|                            ChromaDB (Embedded Vector Store)       |
++-------------------------------------------------------------------+
+                                                           ^
+                                                           |
++--------------------+       +-----------------+           |
+| User Open WebUI    | ----> |  Embed Query    |-----------+
+| Chat               |       +-----------------+
+| (Ask)              |
++--------------------+
+          |
+          |
+          V
++--------------------+
+|  Top-K Search from |
+|  ChromaDB          |
++--------------------+
+          |
+          |
+          V
++--------------------+
+|  Build Prompt +    |
+|  Context           |
++--------------------+
+          |
+          |
+          V
++--------------------+
+|  LLM Call          |
+|  (Ollama, OpenAI,  |
+|  Claude)           |
++--------------------+
+```
+
+-----
+
+### Technical Architecture
+
+#### Components
+
+| Component | Technology | Role |
+| :--- | :--- | :--- |
+| Ingest Orchestrator | n8n (Docker) | Automates file collection + redaction |
+| Chat UI | Open WebUI | User-facing chat interface with RAG |
+| Embedding Engine | Ollama / Cloud LLMs | Vectorize text + chat questions |
+| Vector Store | ChromaDB (embedded) | Stores vectors for semantic retrieval |
+| OCR / Redaction | Tesseract + spaCy | Converts PDFs to text + PII removal |
+
+#### Deployment Stack
+
+  * All local stack supported via Docker Compose.
+  * Optional use of public LLMs via API (OpenAI, Anthropic, Google).
+  * Data never leaves the network unless explicitly routed to a cloud LLM.
+
+-----
+
+### File Upload & Embedding into Open WebUI Collections (API Integration)
+
+This section describes how to upload a file into Open WebUI's knowledge base via API and assign it to a specific collection for use in Retrieval-Augmented Generation (RAG) queries.
+
+#### 1\. Upload a File
+
+Use a `multipart/form-data` `POST` request to upload the file:
+
+```bash
+curl -X POST 'https://<YOUR_OPEN_WEBUI_HOST>/api/v1/files/' \
+  -H 'Authorization: Bearer <YOUR_API_KEY>' \
+  -F 'file=@/path/to/your/file.txt'
+```
+
+**Response:**
+
+```json
+{
+  "id": "27cb98b6-ef78-4b81-a4f4-4189e013b161",
+  "filename": "file.txt",
+  "meta": {
+    "content_type": "text/plain",
+    "size": 37,
+    "collection_name": null
+  },
+  ...
+}
+```
+
+Copy the `id` from the response — this is the `file_id` needed in the next step.
+
+#### 2\. Assign the File to a Knowledge Collection
+
+Use the file ID to add the file to an existing collection (e.g., "test" with ID `deffe3d7-edc6-4cbf-bad0-a7987210168c`):
+
+```bash
+curl -X POST 'https://<YOUR_OPEN_WEBUI_HOST>/api/v1/knowledge/<COLLECTION_ID>/file/add' \
+  -H 'Authorization: Bearer <YOUR_API_KEY>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "file_id": "27cb98b6-ef78-4b81-a4f4-4189e013b161"
+}'
+```
+
+Replace `<COLLECTION_ID>` with your collection’s UUID.
+
+#### 3\. Verify Assigned Files (Optional)
+
+List all collections and their associated files:
+
+```bash
+curl -X GET 'https://<YOUR_OPEN_WEBUI_HOST>/api/v1/knowledge/list' \
+  -H 'Authorization: Bearer <YOUR_API_KEY>'
+```
+
+Or fetch a specific collection:
+
+```bash
+curl -X GET 'https://<YOUR_OPEN_WEBUI_HOST>/api/v1/knowledge/<COLLECTION_ID>' \
+  -H 'Authorization: Bearer <YOUR_API_KEY>'
+```
+
+#### 4\. Use in Chat
+
+Once attached, file contents are embedded in Open WebUI’s vector database and accessible through chat:
+
+  * Use `#` in the input to attach files or collections to your prompt.
+  * Or ask: “Summarize the documents in the test collection.”
+
+#### ✅ Notes
+
+  * Uploaded files are embedded automatically into ChromaDB.
+  * Embedding supports .txt, .md, .pdf, and .docx formats.
+  * Multiple files can be assigned to the same collection.
+
+-----
+
+### Use Cases
+
+  * Discovery & Documentation of Business Workflows.
+  * SME Interview Capture via File Uploads or Meeting Transcripts.
+  * Semantic Search Across Internal Knowledge.
+  * Rapid Prototyping of RAG Interfaces for Enterprise Teams.
+
+-----
+
+### Security & Governance
+
+  * PII Redaction enforced before ingestion.
+  * Local vector DB (ChromaDB) ensures data residency.
+  * Access controlled via Open WebUI or front proxy.
+
+-----
+
+### Next Steps
+
+  * Implement file ingestion form and webhook receiver.
+  * Configure n8n flows for OCR + redaction.
+  * Stand up Open WebUI with Ollama and ChromaDB.
+  * Validate document chunking and retrieval accuracy.
+  * Test local vs. cloud LLM routing toggle.
